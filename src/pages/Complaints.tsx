@@ -7,13 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { mockComplaints, agents, simulateApiCall } from "@/data/mockData";
+import { mockComplaints, simulateApiCall } from "@/data/mockData";
 import { AlertCircle, Clock, CheckCircle, AlertTriangle, Eye, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 type Complaint = typeof mockComplaints[0];
 type Status = "Open" | "In Progress" | "Resolved" | "Escalated";
-type Priority = "Low" | "Medium" | "High";
 
 const statusColors: Record<string, string> = {
   Open: "destructive", "In Progress": "default", Resolved: "secondary", Escalated: "outline",
@@ -30,7 +29,7 @@ export default function ComplaintsPage() {
   const [filterPriority, setFilterPriority] = useState("all");
   const [detailOpen, setDetailOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
-  const [selected, setSelected] = useState<{ id: string; userName: string; issueType: string; priority: string; status: string; agent: string; created: string; notes: string[] } | null>(null);
+  const [selected, setSelected] = useState<typeof complaints[0] | null>(null);
   const [note, setNote] = useState("");
 
   useEffect(() => { simulateApiCall(null).then(() => setLoading(false)); }, []);
@@ -53,7 +52,7 @@ export default function ComplaintsPage() {
   };
 
   const columns = [
-    { key: "id", header: "Ticket ID", sortable: true },
+    { key: "id", header: "Complaint ID", sortable: true },
     { key: "userName", header: "User", sortable: true },
     { key: "issueType", header: "Issue Type" },
     { key: "priority", header: "Priority", render: (c: Complaint) => <Badge variant={priorityColors[c.priority] as any}>{c.priority}</Badge> },
@@ -68,15 +67,7 @@ export default function ComplaintsPage() {
         </Select>
       ),
     },
-    {
-      key: "agent", header: "Agent",
-      render: (c: Complaint) => (
-        <Select value={c.agent} onValueChange={v => { updateComplaint(c.id, { agent: v }); toast.success(`Assigned to ${v}`); }}>
-          <SelectTrigger className="w-28 h-7 text-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>{agents.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
-        </Select>
-      ),
-    },
+    { key: "agent", header: "Agent" },
     { key: "created", header: "Created", sortable: true },
   ];
 
@@ -95,17 +86,23 @@ export default function ComplaintsPage() {
         data={filtered}
         columns={columns}
         searchKey="userName"
-        searchPlaceholder="Search tickets..."
+        searchPlaceholder="Search complaints..."
         loading={loading}
         filters={
           <>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="all">All Status</SelectItem>{(["Open","In Progress","Resolved","Escalated"] as const).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              <SelectTrigger className="w-36"><SelectValue placeholder="Select Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Select Status</SelectItem>
+                {(["Open","In Progress","Resolved","Escalated"] as const).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
             </Select>
             <Select value={filterPriority} onValueChange={setFilterPriority}>
-              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="all">All Priority</SelectItem>{(["Low","Medium","High"] as const).map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+              <SelectTrigger className="w-36"><SelectValue placeholder="Select Priority" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Select Priority</SelectItem>
+                {(["Low","Medium","High"] as const).map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+              </SelectContent>
             </Select>
           </>
         }
@@ -122,7 +119,7 @@ export default function ComplaintsPage() {
           <SheetHeader><SheetTitle>Complaint Details</SheetTitle></SheetHeader>
           {selected && (
             <div className="mt-6 space-y-4">
-              {Object.entries({ "Ticket ID": selected.id, User: selected.userName, "Issue Type": selected.issueType, Priority: selected.priority, Status: selected.status, Agent: selected.agent, Created: selected.created }).map(([k, v]) => (
+              {Object.entries({ "Complaint ID": selected.id, User: selected.userName, "Issue Type": selected.issueType, Priority: selected.priority, Status: selected.status, Agent: selected.agent, Created: selected.created }).map(([k, v]) => (
                 <div key={k}><p className="text-xs font-medium text-muted-foreground">{k}</p><p className="text-sm font-medium">{String(v)}</p></div>
               ))}
               {selected.notes.length > 0 && (
