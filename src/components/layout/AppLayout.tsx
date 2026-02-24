@@ -46,7 +46,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
           <Zap className="h-5 w-5" />
         </div>
-        {sidebarOpen && <span className="text-lg font-bold text-sidebar-foreground">SmartMeter</span>}
+        {sidebarOpen && <span className="text-lg font-bold text-sidebar-foreground">WattWise</span>}
       </div>
       <nav className="mt-4 flex-1 space-y-1 px-3">
         {navItems.map((item) => {
@@ -77,7 +77,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           {sidebarOpen && (
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-sidebar-foreground">Admin User</p>
-              <p className="truncate text-xs text-sidebar-foreground/60">admin@smartmeter.gov</p>
+              <p className="truncate text-xs text-sidebar-foreground/60">admin@wattwise.gov</p>
             </div>
           )}
         </div>

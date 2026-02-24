@@ -26,7 +26,7 @@ export default function Login() {
             <Zap className="h-7 w-7" />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground">SmartMeter Admin</h1>
+            <h1 className="text-2xl font-bold text-foreground">WattWise Admin</h1>
             <p className="text-sm text-muted-foreground mt-1">Sign in to your admin portal</p>
           </div>
         </CardHeader>
@@ -34,7 +34,7 @@ export default function Login() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Email</label>
-              <Input type="email" placeholder="admin@smartmeter.gov" defaultValue="admin@smartmeter.gov" />
+              <Input type="email" placeholder="admin@wattwise.gov" defaultValue="admin@wattwise.gov" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Password</label>

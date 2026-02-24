@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DataTable } from "@/components/shared/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,9 +7,54 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { mockUsers, mockSmsLogs, smsTemplates, simulateApiCall } from "@/data/mockData";
 import { Send, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+
+function UserIdSearch({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = query.length > 0
+    ? mockUsers.filter(u => u.id.toLowerCase().includes(query.toLowerCase()) || u.name.toLowerCase().includes(query.toLowerCase())).slice(0, 6)
+    : [];
+
+  const selectedUser = mockUsers.find(u => u.id === value);
+
+  return (
+    <div className="relative" ref={ref}>
+      <Input
+        placeholder="Type User ID..."
+        value={query || (selectedUser ? `${selectedUser.id} — ${selectedUser.name}` : "")}
+        onChange={e => { setQuery(e.target.value); onChange(""); setOpen(true); }}
+        onFocus={() => { if (query.length > 0) setOpen(true); }}
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md py-1 max-h-48 overflow-y-auto">
+          {filtered.map(u => (
+            <button
+              key={u.id}
+              className="w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+              onClick={() => { onChange(u.id); setQuery(""); setOpen(false); }}
+            >
+              <span className="font-medium">{u.id}</span> — {u.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SmsPage() {
   const [loading, setLoading] = useState(true);
@@ -67,11 +112,8 @@ export default function SmsPage() {
             <CardHeader><CardTitle className="text-base">Send Individual Reminder</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Select User</label>
-                <Select value={selectedUser} onValueChange={setSelectedUser}>
-                  <SelectTrigger><SelectValue placeholder="Choose user" /></SelectTrigger>
-                  <SelectContent>{mockUsers.map(u => <SelectItem key={u.id} value={u.id}>{u.name} ({u.id})</SelectItem>)}</SelectContent>
-                </Select>
+                <label className="text-sm font-medium">User ID</label>
+                <UserIdSearch value={selectedUser} onChange={setSelectedUser} />
               </div>
               <div>
                 <label className="text-sm font-medium">Template</label>
@@ -98,9 +140,9 @@ export default function SmsPage() {
               <div>
                 <label className="text-sm font-medium">Category</label>
                 <Select value={bulkCategory} onValueChange={setBulkCategory}>
-                  <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-48"><SelectValue placeholder="Select Category" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Users</SelectItem>
+                    <SelectItem value="all">Select Category</SelectItem>
                     <SelectItem value="overdue">Overdue Only</SelectItem>
                     <SelectItem value="pending">Pending Only</SelectItem>
                   </SelectContent>

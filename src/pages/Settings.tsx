@@ -64,9 +64,9 @@ export default function SettingsPage() {
             <CardContent>
               <form onSubmit={e => { e.preventDefault(); toast.success("Profile updated!"); }} className="space-y-4">
                 <div><Label>Full Name</Label><Input defaultValue="Admin User" /></div>
-                <div><Label>Email</Label><Input defaultValue="admin@smartmeter.gov" /></div>
+                <div><Label>Email</Label><Input defaultValue="admin@wattwise.gov" /></div>
                 <div><Label>Phone</Label><Input defaultValue="+91 98765 00000" /></div>
-                <div><Label>Department</Label><Input defaultValue="Smart Metering Division" /></div>
+                <div><Label>Department</Label><Input defaultValue="WattWise Division" /></div>
                 <Button type="submit">Update Profile</Button>
               </form>
             </CardContent>
