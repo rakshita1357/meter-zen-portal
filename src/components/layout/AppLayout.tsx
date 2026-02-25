@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import {
   LayoutDashboard, Users, MessageSquareWarning, MessageCircle,
   DollarSign, Settings, Menu, X, Bell, Search, ChevronRight,
-  Moon, Sun, Zap,
+  Moon, Sun,
 } from "lucide-react";
+import wattwiseLogo from "@/assets/wattwise-logo.png";
 
 const navItems = [
   { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -42,13 +43,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center gap-2 px-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-          <Zap className="h-5 w-5" />
-        </div>
-        {sidebarOpen && <span className="text-lg font-bold text-sidebar-foreground">WattWise</span>}
+      <div className="flex h-16 items-center gap-2.5 px-4">
+        <img
+          src={wattwiseLogo}
+          alt="WattWise Logo"
+          className="h-9 w-9 object-contain transition-transform duration-300 hover:scale-110"
+        />
+        {sidebarOpen && <span className="text-lg font-bold text-sidebar-foreground tracking-tight">WattWise</span>}
       </div>
-      <nav className="mt-4 flex-1 space-y-1 px-3">
+      <nav className="mt-6 flex-1 space-y-1.5 px-3">
         {navItems.map((item) => {
           const active = location.pathname.startsWith(item.path);
           return (
@@ -57,10 +60,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               to={item.path}
               onClick={() => setMobileOpen(false)}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                 active
-                  ? "bg-sidebar-accent text-sidebar-primary"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  ? "bg-sidebar-accent text-sidebar-primary sidebar-active-indicator"
+                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
               )}
             >
               <item.icon className="h-5 w-5 shrink-0" />
@@ -70,14 +73,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         })}
       </nav>
       <div className="border-t border-sidebar-border p-3">
-        <div className={cn("flex items-center gap-3 rounded-lg px-3 py-2", sidebarOpen ? "" : "justify-center")}>
+        <div className={cn("flex items-center gap-3 rounded-lg px-3 py-2.5", sidebarOpen ? "" : "justify-center")}>
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground">
             A
           </div>
           {sidebarOpen && (
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-sidebar-foreground">Admin User</p>
-              <p className="truncate text-xs text-sidebar-foreground/60">admin@wattwise.gov</p>
+              <p className="truncate text-xs text-sidebar-foreground/50">admin@wattwise.gov</p>
             </div>
           )}
         </div>
@@ -89,7 +92,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen w-full bg-background">
       {/* Desktop sidebar */}
       <aside className={cn(
-        "hidden lg:flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
+        "hidden lg:flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-in-out",
         sidebarOpen ? "w-64" : "w-[72px]"
       )}>
         <SidebarContent />
@@ -98,7 +101,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {/* Mobile sidebar overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-foreground/20" onClick={() => setMobileOpen(false)} />
+          <div className="absolute inset-0 bg-foreground/20 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <aside className="relative z-10 h-full w-64 bg-sidebar animate-slide-in-right">
             <SidebarContent />
           </aside>
@@ -108,24 +111,24 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {/* Main content */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 card-shadow lg:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/60 bg-card/80 backdrop-blur-md px-4 lg:px-6">
           <Button
             variant="ghost"
             size="icon"
-            className="shrink-0"
+            className="shrink-0 transition-transform duration-200 active:scale-95"
             onClick={() => { if (window.innerWidth < 1024) setMobileOpen(!mobileOpen); else setSidebarOpen(!sidebarOpen); }}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
           <div className="relative hidden flex-1 sm:block max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search anything..." className="pl-9 bg-muted/50 border-none" />
+            <Input placeholder="Search anything..." className="pl-9 bg-muted/40 border-none rounded-lg" />
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setDark(!dark)}>
+            <Button variant="ghost" size="icon" className="transition-all duration-200 hover:bg-accent/10 active:scale-95" onClick={() => setDark(!dark)}>
               {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative transition-all duration-200 hover:bg-accent/10 active:scale-95">
               <Bell className="h-5 w-5" />
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
             </Button>
