@@ -89,42 +89,44 @@ export function DataTable<T extends Record<string, any>>({
               placeholder={searchPlaceholder}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-              className="pl-9"
+              className="pl-9 bg-muted/40 border-border/50 rounded-lg"
             />
           </div>
         )}
         {filters && <div className="flex flex-wrap items-center gap-2">{filters}</div>}
       </div>
 
-      <div className="rounded-lg border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              {columns.map((col) => (
-                <TableHead key={col.key} className="font-semibold text-foreground">
-                  {col.sortable ? (
-                    <button onClick={() => handleSort(col.key)} className="inline-flex items-center gap-1 hover:text-primary">
-                      {col.header} <ArrowUpDown className="h-3 w-3" />
-                    </button>
-                  ) : col.header}
-                </TableHead>
-              ))}
-              {actions && <TableHead className="font-semibold text-foreground">Actions</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paged.length === 0 ? (
-              <TableRow><TableCell colSpan={columns.length + (actions ? 1 : 0)} className="py-8 text-center text-muted-foreground">No records found</TableCell></TableRow>
-            ) : paged.map((item, i) => (
-              <TableRow key={i} className="hover:bg-muted/30 transition-colors">
+      <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        <div className="max-h-[600px] overflow-auto">
+          <Table>
+            <TableHeader className="sticky top-0 z-10 bg-muted/60 backdrop-blur-sm">
+              <TableRow className="border-b border-border/40">
                 {columns.map((col) => (
-                  <TableCell key={col.key}>{col.render ? col.render(item) : item[col.key]}</TableCell>
+                  <TableHead key={col.key} className="font-semibold text-foreground text-xs uppercase tracking-wider">
+                    {col.sortable ? (
+                      <button onClick={() => handleSort(col.key)} className="inline-flex items-center gap-1 hover:text-primary transition-colors duration-200">
+                        {col.header} <ArrowUpDown className="h-3 w-3" />
+                      </button>
+                    ) : col.header}
+                  </TableHead>
                 ))}
-                {actions && <TableCell>{actions(item)}</TableCell>}
+                {actions && <TableHead className="font-semibold text-foreground text-xs uppercase tracking-wider">Actions</TableHead>}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paged.length === 0 ? (
+                <TableRow><TableCell colSpan={columns.length + (actions ? 1 : 0)} className="py-8 text-center text-muted-foreground">No records found</TableCell></TableRow>
+              ) : paged.map((item, i) => (
+                <TableRow key={i} className="hover:bg-primary/3 transition-colors duration-150 border-b border-border/30">
+                  {columns.map((col) => (
+                    <TableCell key={col.key}>{col.render ? col.render(item) : item[col.key]}</TableCell>
+                  ))}
+                  {actions && <TableCell>{actions(item)}</TableCell>}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {totalPages > 1 && (
