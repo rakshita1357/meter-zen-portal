@@ -30,6 +30,7 @@ export default function Login() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
+      login();
       toast.success("Logged in successfully");
       navigate("/dashboard");
     }, 1200);
