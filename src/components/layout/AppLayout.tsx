@@ -140,6 +140,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </div>
               <span className="text-sm font-medium">Admin</span>
             </div>
+            <Button variant="ghost" size="icon" className="transition-all duration-200 hover:bg-destructive/10 active:scale-95" onClick={() => { logout(); navigate("/login"); }} title="Logout">
+              <LogOut className="h-5 w-5 text-destructive" />
+            </Button>
           </div>
         </header>
 
