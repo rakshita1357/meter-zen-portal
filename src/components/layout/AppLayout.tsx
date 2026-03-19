@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import {
   LayoutDashboard, Users, MessageSquareWarning, MessageCircle,
   DollarSign, Settings, Menu, X, Bell, Search, ChevronRight,
-  Moon, Sun,
+  Moon, Sun, LogOut,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import wattwiseLogo from "@/assets/wattwise-logo.png";
 
 const navItems = [
