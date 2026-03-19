@@ -1,21 +1,36 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Zap } from "lucide-react";
+import { Eye, EyeOff, Zap } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [userId, setUserId] = useState("");
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<{ userId?: string; password?: string }>({});
+
+  const validate = () => {
+    const e: typeof errors = {};
+    if (!userId.trim()) e.userId = "User ID is required";
+    if (!password.trim()) e.password = "Password is required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
+      toast.success("Logged in successfully");
       navigate("/dashboard");
-    }, 1000);
+    }, 1200);
   };
 
   return (
@@ -33,17 +48,46 @@ export default function Login() {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Email</label>
-              <Input type="email" placeholder="admin@wattwise.gov" defaultValue="admin@wattwise.gov" />
+              <label className="text-sm font-medium text-foreground">User ID</label>
+              <Input
+                placeholder="Enter your User ID"
+                value={userId}
+                onChange={(e) => { setUserId(e.target.value); setErrors((p) => ({ ...p, userId: undefined })); }}
+              />
+              {errors.userId && <p className="text-xs text-destructive">{errors.userId}</p>}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Password</label>
-              <Input type="password" placeholder="••••••••" defaultValue="password123" />
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: undefined })); }}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
+            </div>
+            <div className="flex justify-end">
+              <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                Forgot Password?
+              </Link>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}
             </Button>
-            <p className="text-center text-xs text-muted-foreground">Demo credentials pre-filled. Click Sign In to continue.</p>
+            <p className="text-center text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <Link to="/register" className="text-primary hover:underline font-medium">Register</Link>
+            </p>
           </form>
         </CardContent>
       </Card>
