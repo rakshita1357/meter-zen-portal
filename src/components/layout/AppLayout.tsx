@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import {
   LayoutDashboard, Users, MessageSquareWarning, MessageCircle,
   DollarSign, Settings, Menu, X, Bell, Search, ChevronRight,
-  Moon, Sun,
+  Moon, Sun, LogOut,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import wattwiseLogo from "@/assets/wattwise-logo.png";
 
 const navItems = [
@@ -28,6 +29,7 @@ function getBreadcrumbs(pathname: string) {
 export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(false);
@@ -138,6 +140,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </div>
               <span className="text-sm font-medium">Admin</span>
             </div>
+            <Button variant="ghost" size="icon" className="transition-all duration-200 hover:bg-destructive/10 active:scale-95" onClick={() => { logout(); navigate("/login"); }} title="Logout">
+              <LogOut className="h-5 w-5 text-destructive" />
+            </Button>
           </div>
         </header>
 
