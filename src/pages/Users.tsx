@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { userService, User } from "@/services/users";
+import { referenceService } from "@/services/reference";
 import { DataTable } from "@/components/shared/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,18 +10,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { mockUsers, simulateApiCall, states, stateDiscomMap } from "@/data/mockData";
 import { Eye, Pencil, Ban, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 type BalanceTimePeriod = "today" | "lastWeek" | "lastMonth" | "year";
 
 export default function UsersPage() {
-  const [users, setUsers] = useState(mockUsers);
-  const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<typeof mockUsers[0] | null>(null);
+  const queryClient = useQueryClient();
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  
+  // Filters state
   const [filterActive, setFilterActive] = useState("all");
   const [filterState, setFilterState] = useState("all");
   const [filterDiscom, setFilterDiscom] = useState("all");
@@ -26,19 +30,64 @@ export default function UsersPage() {
   const [customAmount, setCustomAmount] = useState("");
   const [balanceTimePeriod, setBalanceTimePeriod] = useState<BalanceTimePeriod>("lastMonth");
 
-  useEffect(() => { simulateApiCall(null).then(() => setLoading(false)); }, []);
-
-  const availableDiscoms = filterState !== "all" ? stateDiscomMap[filterState] || [] : [];
-
-  const filtered = users.filter(u => {
-    if (filterActive === "active" && !u.active) return false;
-    if (filterActive === "inactive" && u.active) return false;
-    if (filterState !== "all" && u.state !== filterState) return false;
-    if (filterDiscom !== "all" && u.discom !== filterDiscom) return false;
-    const amountThreshold = filterAmount === "custom" ? Number(customAmount) : filterAmount !== "all" ? Number(filterAmount) : 0;
-    if (amountThreshold > 0 && u.billAmount < amountThreshold) return false;
-    return true;
+  // Fetch Reference Data
+  const { data: statesList = [] } = useQuery({
+    queryKey: ['states'],
+    queryFn: referenceService.getStates
   });
+
+  const { data: discomsList = [] } = useQuery({
+    queryKey: ['discoms', filterState],
+    queryFn: () => referenceService.getDiscoms(filterState !== "all" ? statesList.find(s => s.name === filterState)?.id : undefined),
+    enabled: true // Always fetch, API handles optional state_id
+  });
+
+  // Fetch Users
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ['users', filterState, filterDiscom, filterActive, filterAmount, customAmount],
+    queryFn: () => userService.getAll({
+       state: filterState,
+       discom: filterDiscom,
+       active: filterActive === "all" ? undefined : filterActive === "active",
+       amount_gt: filterAmount === "custom" ? Number(customAmount) : filterAmount !== "all" ? Number(filterAmount) : undefined
+    })
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: userService.toggleActive,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success("User status updated");
+    },
+    onError: () => toast.error("Failed to update status")
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Partial<User> }) => userService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setEditOpen(false);
+      toast.success("User updated successfully");
+    },
+    onError: () => toast.error("Failed to update user")
+  });
+
+  const handleUpdateUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    
+    updateUserMutation.mutate({
+      id: selectedUser.id,
+      data: {
+        name: formData.get('name') as string,
+        phone: formData.get('phone') as string,
+        email: formData.get('email') as string,
+        state: formData.get('state') as string,
+      }
+    });
+  };
 
   const columns = [
     { key: "id", header: "User ID", sortable: true },
@@ -48,37 +97,37 @@ export default function UsersPage() {
     { key: "phone", header: "Phone" },
     { key: "state", header: "State" },
     { key: "discom", header: "DISCOM" },
-    { key: "billAmount", header: "Bill (₹)", sortable: true, render: (u: typeof mockUsers[0]) => `₹${u.billAmount.toLocaleString()}` },
+    { key: "billAmount", header: "Bill (₹)", sortable: true, render: (u: User) => `₹${u.billAmount.toLocaleString()}` },
     { key: "lastPayment", header: "Last Payment", sortable: true },
-    { key: "activeComplaint", header: "Active Complaint", render: (u: typeof mockUsers[0]) => u.activeComplaint ? <Badge variant="destructive">Yes</Badge> : <Badge variant="secondary">No</Badge> },
-    { key: "complaintId", header: "Complaint ID", render: (u: typeof mockUsers[0]) => u.activeComplaint ? u.complaintId : "—" },
-    { key: "remainingBalance", header: "Remaining Bal.", sortable: true, render: (u: typeof mockUsers[0]) => `₹${u.remainingBalance.toLocaleString()}` },
-    { key: "balanceUsed", header: "Balance Used", sortable: true, render: (u: typeof mockUsers[0]) => `₹${u.balanceUsedByTime[balanceTimePeriod].toLocaleString()}` },
+    { key: "activeComplaint", header: "Active Complaint", render: (u: User) => u.activeComplaint ? <Badge variant="destructive">Yes</Badge> : <Badge variant="secondary">No</Badge> },
+    { key: "complaintId", header: "Complaint ID", render: (u: User) => u.activeComplaint ? u.complaintId : "—" },
+    { key: "remainingBalance", header: "Remaining Bal.", sortable: true, render: (u: User) => `₹${u.remainingBalance.toLocaleString()}` },
+    { key: "balanceUsed", header: "Balance Used", sortable: true, render: (u: User) => `₹${u.balanceUsedByTime?.[balanceTimePeriod]?.toLocaleString() ?? 0}` },
   ];
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">User Management</h1>
       <DataTable
-        data={filtered}
+        data={users}
         columns={columns}
         searchKey="name"
         searchPlaceholder="Search users..."
-        loading={loading}
+        loading={isLoading}
         filters={
           <div className="flex flex-wrap items-center gap-2">
             <Select value={filterState} onValueChange={(v) => { setFilterState(v); setFilterDiscom("all"); }}>
               <SelectTrigger className="w-36"><SelectValue placeholder="Select State" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Select State</SelectItem>
-                {states.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {statesList.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterDiscom} onValueChange={setFilterDiscom} disabled={filterState === "all"}>
               <SelectTrigger className="w-44"><SelectValue placeholder="Select DISCOM" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Select DISCOM</SelectItem>
-                {availableDiscoms.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                {discomsList.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterActive} onValueChange={setFilterActive}>
@@ -124,10 +173,9 @@ export default function UsersPage() {
           <div className="flex gap-1">
             <Button variant="ghost" size="icon" onClick={() => { setSelectedUser(user); setDrawerOpen(true); }}><Eye className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" onClick={() => { setSelectedUser(user); setEditOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" onClick={() => {
-              setUsers(prev => prev.map(u => u.id === user.id ? { ...u, active: !u.active } : u));
-              toast.success(`User ${user.active ? "blocked" : "unblocked"}`);
-            }}><Ban className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => toggleActiveMutation.mutate(user.id)} disabled={toggleActiveMutation.isPending}>
+               {toggleActiveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className={`h-4 w-4 ${!user.active ? "text-destructive" : ""}`} />}
+            </Button>
             <Button variant="ghost" size="icon" onClick={() => toast.info("Navigating to user portal...")}><ExternalLink className="h-4 w-4" /></Button>
           </div>
         )}
@@ -143,12 +191,14 @@ export default function UsersPage() {
                 Phone: selectedUser.phone, Email: selectedUser.email, State: selectedUser.state, DISCOM: selectedUser.discom,
                 "Bill Amount": `₹${selectedUser.billAmount}`, "Last Payment": selectedUser.lastPayment,
                 "Active Complaint": selectedUser.activeComplaint ? "Yes" : "No",
-                ...(selectedUser.activeComplaint ? { "Complaint ID": selectedUser.complaintId } : {}),
                 "Remaining Balance": `₹${selectedUser.remainingBalance}`,
                 Active: selectedUser.active ? "Yes" : "No",
               }).map(([k, v]) => (
                 <div key={k}><p className="text-xs font-medium text-muted-foreground">{k}</p><p className="text-sm font-medium">{v}</p></div>
               ))}
+              {selectedUser.activeComplaint && selectedUser.complaintId && (
+                 <div><p className="text-xs font-medium text-muted-foreground">Complaint ID</p><p className="text-sm font-medium">{selectedUser.complaintId}</p></div>
+              )}
             </div>
           )}
         </SheetContent>
@@ -158,12 +208,14 @@ export default function UsersPage() {
         <DialogContent>
           <DialogHeader><DialogTitle>Edit User</DialogTitle></DialogHeader>
           {selectedUser && (
-            <form onSubmit={e => { e.preventDefault(); toast.success("User updated!"); setEditOpen(false); }} className="space-y-4">
-              <div><Label>Name</Label><Input defaultValue={selectedUser.name} /></div>
-              <div><Label>Phone</Label><Input defaultValue={selectedUser.phone} /></div>
-              <div><Label>Email</Label><Input defaultValue={selectedUser.email} /></div>
-              <div><Label>State</Label><Input defaultValue={selectedUser.state} /></div>
-              <Button type="submit" className="w-full">Save Changes</Button>
+            <form onSubmit={handleUpdateUser} className="space-y-4">
+              <div><Label htmlFor="name">Name</Label><Input id="name" name="name" defaultValue={selectedUser.name} /></div>
+              <div><Label htmlFor="phone">Phone</Label><Input id="phone" name="phone" defaultValue={selectedUser.phone} /></div>
+              <div><Label htmlFor="email">Email</Label><Input id="email" name="email" defaultValue={selectedUser.email} /></div>
+              <div><Label htmlFor="state">State</Label><Input id="state" name="state" defaultValue={selectedUser.state} /></div>
+              <Button type="submit" className="w-full" disabled={updateUserMutation.isPending}>
+                {updateUserMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
             </form>
           )}
         </DialogContent>

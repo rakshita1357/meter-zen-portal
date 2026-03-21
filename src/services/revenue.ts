@@ -2,11 +2,19 @@ import api from "@/lib/api";
 
 export interface Transaction {
   id: string;
-  user_id: string;
+  userName: string;
+  meterId: string;
   amount: number;
   date: string;
-  payment_method: string;
-  status: string;
+  method: string;
+  status: "Success" | "Pending" | "Failed";
+}
+
+export interface TransactionResponse {
+  total: number;
+  page: number;
+  page_size: number;
+  data: Transaction[];
 }
 
 export interface RevenueSummary {
@@ -27,10 +35,25 @@ export interface PaymentMethodDistribution {
   total_amount: number;
 }
 
+export interface RevenueByState {
+  state: string;
+  revenue: number;
+}
+
 export const revenueService = {
-  getTransactions: async (params?: any) => {
+  getTransactions: async (params?: any): Promise<TransactionResponse> => {
     const response = await api.get("/api/transactions", { params });
-    return response.data;
+    // Mapping assuming snake_case from backend
+    const data = response.data.data.map((t: any) => ({
+      id: t.id,
+      userName: t.user_name || t.userName || "Unknown",
+      meterId: t.meter_id || t.meterId || "Unknown",
+      amount: t.amount,
+      date: t.date || t.created_at,
+      method: t.payment_method || t.method,
+      status: t.status
+    }));
+    return { ...response.data, data };
   },
   getSummary: async (): Promise<RevenueSummary> => {
     const response = await api.get("/api/revenue/summary");
@@ -44,5 +67,8 @@ export const revenueService = {
     const response = await api.get("/api/revenue/payment-methods");
     return response.data;
   },
+  getRevenueByState: async (): Promise<RevenueByState[]> => {
+    const response = await api.get("/api/revenue/by-state");
+    return response.data;
+  },
 };
-
