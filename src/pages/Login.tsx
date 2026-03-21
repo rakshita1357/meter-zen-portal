@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Eye, EyeOff, Zap } from "lucide-react";
-import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Login() {
@@ -24,16 +23,18 @@ export default function Login() {
     return Object.keys(e).length === 0;
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      login();
-      toast.success("Logged in successfully");
+    try {
+      await login({ admin_id: userId, password });
       navigate("/dashboard");
-    }, 1200);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

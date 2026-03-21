@@ -3,18 +3,12 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { UserPlus, Copy, Check, ArrowLeft } from "lucide-react";
+import { UserPlus, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
-
-function generateId() {
-  return "USR-" + String(Math.floor(1000 + Math.random() * 9000));
-}
-function generatePassword() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@#$";
-  return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-}
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Register() {
+  const { register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -34,15 +28,18 @@ export default function Register() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    setTimeout(() => {
-      setCredentials({ userId: generateId(), password: generatePassword() });
+    try {
+      const response = await register({ name, email, phone_number: phone });
+      setCredentials({ userId: response.admin_id, password: response.password });
+    } catch (error) {
+      console.error(error);
+    } finally {
       setLoading(false);
-      toast.success("Registration successful!");
-    }, 1500);
+    }
   };
 
   const copyToClipboard = (text: string, field: string) => {
