@@ -79,6 +79,11 @@ export default function SmsPage() {
     queryFn: smsService.getLogs
   });
 
+  const { data: templates = [] } = useQuery({
+    queryKey: ['smsTemplates'],
+    queryFn: smsService.getTemplates
+  });
+
   const sendSingleMutation = useMutation({
     mutationFn: smsService.sendSingle,
     onSuccess: () => {
@@ -95,6 +100,15 @@ export default function SmsPage() {
       toast.success(`Bulk SMS sent: ${data.sent} sent, ${data.failed} failed`);
     },
     onError: () => toast.error("Failed to send bulk SMS")
+  });
+
+  const updateTemplateMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string, body: string }) => smsService.updateTemplate(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['smsTemplates'] });
+      toast.success("Template updated successfully!");
+    },
+    onError: () => toast.error("Failed to update template")
   });
 
   const retryMutation = useMutation({
@@ -167,9 +181,19 @@ export default function SmsPage() {
               </div>
               <div>
                 <label className="text-sm font-medium">Template</label>
-                <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
-                  <SelectTrigger><SelectValue placeholder="Choose template" /></SelectTrigger>
-                  <SelectContent>{smsTemplates.map(t => <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>)}</SelectContent>
+                <Select value={selectedTemplate} onValueChange={(v) => {
+                    setSelectedTemplate(v);
+                    const tmpl = templates.find(t => t.id === v);
+                    if (tmpl) setMessagePreview(tmpl.body);
+                  }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a template..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templates.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               <div>

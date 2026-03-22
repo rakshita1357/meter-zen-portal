@@ -22,11 +22,17 @@ export interface SendBulkSMSParams {
   user_ids?: string[];
 }
 
+export interface SMSTemplate {
+  id: string;
+  title: string;
+  body: string;
+}
+
 export const smsService = {
-  getLogs: async (params?: any): Promise<SMSLog[]> => {
+  getLogs: async (params?: Record<string, unknown>): Promise<SMSLog[]> => {
     const response = await api.get("/api/sms/logs", { params });
     // Map snake_case to camelCase
-    return response.data.map((log: any) => ({
+    return response.data.map((log: Record<string, any>) => ({
       id: log.id,
       userId: log.user_id,
       userName: log.user_name || "Unknown",
@@ -44,6 +50,16 @@ export const smsService = {
 
   sendBulk: async (data: SendBulkSMSParams) => {
     const response = await api.post("/api/sms/send-bulk", data);
+    return response.data;
+  },
+
+  getTemplates: async (): Promise<SMSTemplate[]> => {
+    const response = await api.get("/api/sms/templates");
+    return response.data;
+  },
+
+  updateTemplate: async (id: string, body: string) => {
+    const response = await api.put(`/api/sms/templates/${id}`, { body });
     return response.data;
   },
 

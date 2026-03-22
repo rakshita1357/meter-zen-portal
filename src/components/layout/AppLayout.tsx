@@ -1,12 +1,16 @@
 import { useState, useEffect, ReactNode } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { notificationService, NotificationResponse } from "@/services/notifications";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   LayoutDashboard, Users, MessageSquareWarning, MessageCircle,
   DollarSign, Settings, Menu, X, Bell, Search, ChevronRight,
-  Moon, Sun, LogOut,
+  Moon, Sun, LogOut, CheckCheck
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import wattwiseLogo from "@/assets/wattwise-logo.png";
@@ -27,6 +31,7 @@ function getBreadcrumbs(pathname: string) {
 }
 
 export default function AppLayout({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -34,6 +39,33 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const breadcrumbs = getBreadcrumbs(location.pathname);
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => notificationService.getLatest(10)
+  });
+
+  const { data: unreadCount = 0 } = useQuery<number>({
+    queryKey: ['notificationsUnread'],
+    queryFn: notificationService.getUnreadCount,
+    refetchInterval: 60000 // Poll every minute
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: notificationService.markRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notificationsUnread'] });
+    }
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: notificationService.markAllRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notificationsUnread'] });
+    }
+  });
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -130,10 +162,51 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <Button variant="ghost" size="icon" className="transition-all duration-200 hover:bg-accent/10 active:scale-95" onClick={() => setDark(!dark)}>
               {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
-            <Button variant="ghost" size="icon" className="relative transition-all duration-200 hover:bg-accent/10 active:scale-95">
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
-            </Button>
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative transition-all duration-200 hover:bg-accent/10 active:scale-95">
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="end">
+                <div className="flex items-center justify-between border-b px-4 py-3">
+                  <h4 className="font-semibold">Notifications</h4>
+                  {unreadCount > 0 && (
+                    <Button variant="ghost" size="sm" className="h-auto text-xs text-muted-foreground" onClick={() => markAllReadMutation.mutate()}>
+                      <CheckCheck className="mr-1 h-3 w-3" /> Mark all read
+                    </Button>
+                  )}
+                </div>
+                <ScrollArea className="h-[300px]">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">No notifications</div>
+                  ) : (
+                    <div className="flex flex-col">
+                      {notifications.map((n) => (
+                        <button
+                          key={n.id}
+                          className={cn(
+                            "flex flex-col items-start gap-1 p-4 text-left hover:bg-muted/50 transition-colors border-b last:border-0",
+                            !n.is_read && "bg-muted/20"
+                          )}
+                          onClick={() => !n.is_read && markReadMutation.mutate(n.id)}
+                        >
+                          <div className="flex w-full items-start justify-between gap-2">
+                            <span className="font-medium text-sm">{n.title}</span>
+                            {!n.is_read && <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />}
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>
+                          <span className="text-[10px] text-muted-foreground mt-1">{new Date(n.created_at).toLocaleString()}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+
             <div className="hidden items-center gap-2 sm:flex">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                 A
