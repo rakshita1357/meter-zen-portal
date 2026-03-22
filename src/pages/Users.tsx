@@ -73,12 +73,21 @@ export default function UsersPage() {
   });
 
   const handleCustomSearch = (user: User, term: string) => {
-    // Escape special regex characters
-    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // Match word boundary at the start of the search term
-    // This allows "isha" to match "Isha Khan" but NOT "Vishal" or "Manisha"
-    const regex = new RegExp(`\\b${escapedTerm}`, 'i');
-    return regex.test(user.name);
+    // Safety check for user and name
+    if (!user || typeof user.name !== 'string') return false;
+    
+    try {
+      // Escape special regex characters
+      const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Match word boundary at the start of the search term
+      // This allows "isha" to match "Isha Khan" but NOT "Vishal" or "Manisha"
+      const regex = new RegExp(`\\b${escapedTerm}`, 'i');
+      return regex.test(user.name);
+    } catch (err) {
+      console.warn("Invalid regex or search term:", term, err);
+      // Fallback to simple includes search if regex fails
+      return user.name.toLowerCase().includes(term.toLowerCase());
+    }
   };
 
   const handleUpdateUser = (e: React.FormEvent) => {
