@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import wattwiseLogo from "@/assets/wattwise-logo.png";
+import api from "@/lib/api";
 
 const navItems = [
   { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -74,6 +75,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (location.pathname === "/") navigate("/dashboard", { replace: true });
   }, [location.pathname, navigate]);
+
+  useEffect(() => {
+    // Ping mechanism to keep Render server awake
+    const interval = setInterval(() => {
+      api.get('/').catch(() => {}); // Fire and forget, ignore errors
+    }, 9 * 60 * 1000); // 9 minutes
+
+    return () => clearInterval(interval);
+  }, []);
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
