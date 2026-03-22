@@ -28,6 +28,7 @@ interface DataTableProps<T> {
   pageSize?: number;
   actions?: (item: T) => ReactNode;
   filters?: ReactNode;
+  customSearch?: (item: T, term: string) => boolean;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -39,6 +40,7 @@ export function DataTable<T extends Record<string, any>>({
   pageSize = 8,
   actions,
   filters,
+  customSearch,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -46,10 +48,14 @@ export function DataTable<T extends Record<string, any>>({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   let filtered = data;
-  if (searchKey && search) {
-    filtered = data.filter((item) =>
-      String(item[searchKey]).toLowerCase().includes(search.toLowerCase())
-    );
+  if (search) {
+    if (customSearch) {
+      filtered = data.filter((item) => customSearch(item, search));
+    } else if (searchKey) {
+      filtered = data.filter((item) =>
+        String(item[searchKey]).toLowerCase().includes(search.toLowerCase())
+      );
+    }
   }
 
   if (sortKey) {

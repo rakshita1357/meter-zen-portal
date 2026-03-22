@@ -72,6 +72,15 @@ export default function UsersPage() {
     onError: () => toast.error("Failed to update user")
   });
 
+  const handleCustomSearch = (user: User, term: string) => {
+    // Escape special regex characters
+    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Match word boundary at the start of the search term
+    // This allows "isha" to match "Isha Khan" but NOT "Vishal" or "Manisha"
+    const regex = new RegExp(`\\b${escapedTerm}`, 'i');
+    return regex.test(user.name);
+  };
+
   const handleUpdateUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
@@ -114,6 +123,7 @@ export default function UsersPage() {
         searchKey="name"
         searchPlaceholder="Search users..."
         loading={isLoading}
+        customSearch={handleCustomSearch}
         filters={
           <div className="flex flex-wrap items-center gap-2">
             <Select value={filterState} onValueChange={(v) => { setFilterState(v); setFilterDiscom("all"); }}>
